@@ -638,3 +638,42 @@ function toggleGrid() {
     
     draw();
 }
+
+function rotateMap() {
+    // 1. Cache current terrain and clear rivers for recalculation
+    const terrainMap = new Map();
+    hexes.forEach(h => {
+        terrainMap.set(`${h.q},${h.r}`, h.terrain);
+    });
+
+    // 2. Rotate Hex Content
+    // To move content CW, each hex (q, r) looks at the source that was 60 deg CCW
+    // CCW Lookup: sourceQ = -r, sourceR = q + r
+    hexes.forEach(h => {
+        const sourceQ = -h.r;
+        const sourceR = h.q + h.r;
+        const sourceTerrain = terrainMap.get(`${sourceQ},${sourceR}`);
+        
+        // Only update if the source was within map bounds
+        if (sourceTerrain) {
+            h.terrain = sourceTerrain;
+        } else {
+            h.terrain = 'Open';
+        }
+    });
+
+    // 3. Rotate Rivers
+    const newRivers = new Set();
+    const rot = (q, r) => [q + r, -q]; // CW Transform
+
+    rivers.forEach(id => {
+        const parts = id.split('_').map(p => p.split(',').map(Number));
+        const p1 = rot(parts[0][0], parts[0][1]);
+        const p2 = rot(parts[1][0], parts[1][1]);
+        
+        newRivers.add(getEdgeID(p1[0], p1[1], p2[0], p2[1]));
+    });
+
+    rivers = newRivers;
+    draw();
+}
