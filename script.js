@@ -69,10 +69,10 @@ for (let type in iconFiles) {
 const directions = [[1, 0], [0, 1], [-1, 1], [-1, 0], [0, -1], [1, -1]];
 
 const toolDisplayNames = {
-    'Open': 'Grass',
+    'Open': 'Open',
     'Difficult': 'Forest',
     'Hazardous': 'Hills',
-    'Impassable': 'Mtn',
+    'Impassable': 'Mountain',
     'Water': 'Water',
     'VP': 'VP',
     'Capital': 'Capital',
