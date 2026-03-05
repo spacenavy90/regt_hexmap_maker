@@ -135,11 +135,12 @@ button.active-tool {
 }
 
 .seed-input {
-    background: var(--bg-button);
-    color: var(--text-main);
-    border: 1px solid var(--border);
+    background: #333;
+    color: #fff;
+    border: 1px solid #555;
     border-radius: 4px;
-    padding: 6px 10px;
-    width: 100px;
-    font-size: 13px;
+    padding: 8px;
+    width: 250px; /* Increased width for share codes */
+    font-family: monospace;
+    font-size: 12px;
 }

@@ -53,24 +53,55 @@ const toolDisplayNames = {
 
 const originalRandom = Math.random;
 
-function xmur3(str) {
-    for(var i = 0, h = 1779033703 ^ str.length; i < str.length; i++) {
-        h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
-        h = h << 13 | h >>> 19;
-    } return function() {
-        h = Math.imul(h ^ (h >>> 16), 2246822507);
-        h = Math.imul(h ^ (h >>> 13), 3266489909);
-        return (h ^= h >>> 16) >>> 0;
-    }
+const t2c = { 'Open':'O', 'Difficult':'F', 'Hazardous':'H', 'Impassable':'M', 'Water':'W', 'VP':'V', 'Capital':'C', 'Road':'R' };
+const c2t = { 'O':'Open', 'F':'Difficult', 'H':'Hazardous', 'M':'Impassable', 'W':'Water', 'V':'VP', 'C':'Capital', 'R':'Road' };
+
+// Maps coordinates -5 through 5 to letters A through K
+const n2c = (n) => String.fromCharCode(n + 70); 
+const c2n = (c) => c.charCodeAt(0) - 70;
+
+function getShareCode() {
+    let terrainStr = hexes.map(h => t2c[h.terrain] || 'O').join('');
+    
+    let riverStr = Array.from(rivers).map(id => {
+        let parts = id.split('_').map(p => p.split(',').map(Number));
+        return n2c(parts[0][0]) + n2c(parts[0][1]) + n2c(parts[1][0]) + n2c(parts[1][1]);
+    }).join('');
+    
+    let shareCode = terrainStr + (riverStr.length ? '|' + riverStr : '');
+    document.getElementById('mapSeed').value = shareCode;
 }
 
-function mulberry32(a) {
-    return function() {
-        var t = a += 0x6D2B79F5;
-        t = Math.imul(t ^ t >>> 15, t | 1);
-        t ^= t + Math.imul(t ^ t >>> 7, t | 61);
-        return ((t ^ t >>> 14) >>> 0) / 4294967296;
+function loadShareCode() {
+    let code = document.getElementById('mapSeed').value.trim();
+    if (!code) {
+        alert("Please enter a share code.");
+        return;
     }
+    
+    let parts = code.split('|');
+    let terrainStr = parts[0];
+    let riverStr = parts[1] || '';
+    
+    if (terrainStr.length !== hexes.length) {
+        alert("Invalid share code length.");
+        return;
+    }
+    
+    for (let i = 0; i < hexes.length; i++) {
+        hexes[i].terrain = c2t[terrainStr[i]] || 'Open';
+    }
+    
+    rivers.clear();
+    for (let i = 0; i < riverStr.length; i += 4) {
+        let q1 = c2n(riverStr[i]);
+        let r1 = c2n(riverStr[i+1]);
+        let q2 = c2n(riverStr[i+2]);
+        let r2 = c2n(riverStr[i+3]);
+        rivers.add(getEdgeID(q1, r1, q2, r2));
+    }
+    
+    draw();
 }
 
 function setTool(tool) {
@@ -92,12 +123,12 @@ for (let q = -5; q <= 5; q++) {
 }
 
 canvas.addEventListener('mousedown', (e) => { isDrawing = true; applyTool(e); });
-canvas.addEventListener('mousemove', (e) => {
+canvas.addEventListener('mousemove', (e) => { 
+    // Existing coordinate math...
     const rect = canvas.getBoundingClientRect();
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
 
-    // Standard axial coordinate math
     const dx = mouseX - 400;
     const dy = mouseY - 400;
     const q_frac = (2/3 * dx) / size;
@@ -115,10 +146,22 @@ canvas.addEventListener('mousemove', (e) => {
 
     document.getElementById('hex-coords').innerText = `${q}, ${r}`;
 
-    if (isDrawing) applyTool(e);
+    if (isDrawing) applyTool(e); 
 });
-window.addEventListener('mouseup', () => { isDrawing = false; });
-canvas.addEventListener('mouseleave', () => { isDrawing = false; });
+
+window.addEventListener('mouseup', () => { 
+    if (isDrawing) {
+        isDrawing = false; 
+        getShareCode();
+    }
+});
+
+canvas.addEventListener('mouseleave', () => { 
+    if (isDrawing) {
+        isDrawing = false; 
+        getShareCode();
+    }
+});
 
 function applyTool(e) {
     const rect = canvas.getBoundingClientRect();
@@ -263,6 +306,7 @@ function clearMap() {
     hexes.forEach(h => h.terrain = 'Open');
     rivers.clear();
     draw();
+    getShareCode();
 }
 
 function downloadMap() {
@@ -369,19 +413,14 @@ function getPath(startHex, endHex) {
 }
 
 function generateMap() {
+    // Ensure we are using standard randomness for the new generation
     Math.random = originalRandom; 
 
-    let seedInput = document.getElementById('mapSeed').value.trim();
-    if (seedInput === "") {
-        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-        for (let i = 0; i < 8; i++) seedInput += chars.charAt(Math.floor(Math.random() * chars.length));
-        document.getElementById('mapSeed').value = seedInput;
-    }
-    
-    const seedVal = xmur3(seedInput)();
-    Math.random = mulberry32(seedVal);
-
-    hexes.forEach(h => h.terrain = 'Open');
+    // Reset the map state
+    hexes.forEach(h => {
+        h.terrain = 'Open';
+        h.populated = false; // Reset population flag for scatter-burst
+    });
     rivers.clear();
 
     const capitalHex = hexes.find(h => h.q === 0 && h.r === 0);
@@ -626,6 +665,7 @@ function generateMap() {
     });
 
     draw();
+    getShareCode();
 }
 
 function saveProject() {
@@ -715,6 +755,7 @@ function rotateMap() {
 
     rivers = newRivers;
     draw();
+    getShareCode();
 }
 
 function generateRandomMap() {
@@ -768,6 +809,7 @@ function mirrorMap(direction) {
 
     rivers = newRivers;
     draw();
+    getShareCode();
 }
 
 draw();
