@@ -229,10 +229,12 @@ function applyTool(e) {
                 baseHex.terrain = 'Open';
             }
             draw();
+            getShareCode();
         }
     } else {
         baseHex.terrain = currentTool;
         draw();
+        getShareCode();
     }
 }
 
@@ -695,6 +697,7 @@ function loadProject(event) {
                 hexes = projectData.hexes;
                 rivers = new Set(projectData.rivers);
                 draw();
+                getShareCode();
             } else {
                 alert("Invalid map file format.");
             }
@@ -810,6 +813,20 @@ function mirrorMap(direction) {
     rivers = newRivers;
     draw();
     getShareCode();
+}
+
+function copyShareCode() {
+    const codeInput = document.getElementById('mapSeed');
+    if (!codeInput.value) return;
+    
+    codeInput.select();
+    codeInput.setSelectionRange(0, 99999); 
+    navigator.clipboard.writeText(codeInput.value).then(() => {
+        const copyBtn = document.getElementById('copyBtn');
+        const originalText = copyBtn.innerText;
+        copyBtn.innerText = "Copied!";
+        setTimeout(() => { copyBtn.innerText = originalText; }, 1500);
+    });
 }
 
 draw();
