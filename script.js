@@ -5,6 +5,7 @@ let currentTool = 'Open';
 let hexes = [];
 let rivers = new Set(); 
 let isDrawing = false;
+let gridStyle = 'white';
 
 const terrainColors = {
     'Open': '#90ee90',      
@@ -184,19 +185,16 @@ function drawHex(targetCtx, x, y, type) {
     targetCtx.closePath();
     targetCtx.fillStyle = terrainColors[type] || '#90ee90';
     targetCtx.fill();
-    targetCtx.strokeStyle = "white";
+    
+    // Grid stroke is now always rendered as either white or black
+    targetCtx.strokeStyle = gridStyle;
     targetCtx.lineWidth = 1;
     targetCtx.stroke();
 
     if (loadedIcons[type] && loadedIcons[type].complete && loadedIcons[type].naturalWidth !== 0) {
-        const iconSize = size * 1.2;
-        
-        // Invert only the Road icon to make it white
+        const iconSize = size * 1.2; 
         if (type === 'Road') targetCtx.filter = 'invert(100%)';
-        
         targetCtx.drawImage(loadedIcons[type], x - iconSize / 2, y - iconSize / 2, iconSize, iconSize);
-        
-        // Reset filter so it doesn't affect other icons
         targetCtx.filter = 'none';
     }
 }
@@ -627,4 +625,16 @@ function loadProject(event) {
         event.target.value = ""; 
     };
     reader.readAsText(file);
+}
+
+function toggleGrid() {
+    // Cycles strictly between white and black
+    gridStyle = (gridStyle === 'white') ? 'black' : 'white';
+    
+    const btn = document.getElementById('gridToggleBtn');
+    if (btn) {
+        btn.innerText = `Grid: ${gridStyle.charAt(0).toUpperCase() + gridStyle.slice(1)}`;
+    }
+    
+    draw();
 }
