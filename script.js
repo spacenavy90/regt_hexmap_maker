@@ -51,9 +51,38 @@ const toolDisplayNames = {
     'Eraser': 'Eraser'
 };
 
+const originalRandom = Math.random;
+
+function xmur3(str) {
+    for(var i = 0, h = 1779033703 ^ str.length; i < str.length; i++) {
+        h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
+        h = h << 13 | h >>> 19;
+    } return function() {
+        h = Math.imul(h ^ (h >>> 16), 2246822507);
+        h = Math.imul(h ^ (h >>> 13), 3266489909);
+        return (h ^= h >>> 16) >>> 0;
+    }
+}
+
+function mulberry32(a) {
+    return function() {
+        var t = a += 0x6D2B79F5;
+        t = Math.imul(t ^ t >>> 15, t | 1);
+        t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+        return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    }
+}
+
 function setTool(tool) {
     currentTool = tool;
     document.getElementById('active-tool').innerText = toolDisplayNames[tool] || tool;
+    
+    document.querySelectorAll('button[data-tool]').forEach(btn => {
+        btn.classList.remove('active-tool');
+    });
+    
+    const activeBtn = document.querySelector(`button[data-tool="${tool}"]`);
+    if (activeBtn) activeBtn.classList.add('active-tool');
 }
 
 for (let q = -5; q <= 5; q++) {
@@ -340,6 +369,18 @@ function getPath(startHex, endHex) {
 }
 
 function generateMap() {
+    Math.random = originalRandom; 
+
+    let seedInput = document.getElementById('mapSeed').value.trim();
+    if (seedInput === "") {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        for (let i = 0; i < 8; i++) seedInput += chars.charAt(Math.floor(Math.random() * chars.length));
+        document.getElementById('mapSeed').value = seedInput;
+    }
+    
+    const seedVal = xmur3(seedInput)();
+    Math.random = mulberry32(seedVal);
+
     hexes.forEach(h => h.terrain = 'Open');
     rivers.clear();
 
@@ -587,8 +628,6 @@ function generateMap() {
     draw();
 }
 
-draw();
-
 function saveProject() {
     const projectData = {
         hexes: hexes,
@@ -677,3 +716,58 @@ function rotateMap() {
     rivers = newRivers;
     draw();
 }
+
+function generateRandomMap() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let randomSeed = '';
+    // Restore original random to ensure true randomness for the seed string
+    Math.random = originalRandom; 
+    for (let i = 0; i < 8; i++) {
+        randomSeed += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    document.getElementById('mapSeed').value = randomSeed;
+    generateMap();
+}
+
+function generateFromSeed() {
+    if (document.getElementById('mapSeed').value.trim() === "") {
+        alert("Please enter a seed value.");
+        return;
+    }
+    generateMap();
+}
+
+function mirrorMap(direction) {
+    const terrainMap = new Map();
+    hexes.forEach(h => terrainMap.set(`${h.q},${h.r}`, h.terrain));
+
+    const newRivers = new Set();
+    
+    const mirrorQ = (q, r, dir) => dir === 'horizontal' ? -q : q;
+    const mirrorR = (q, r, dir) => dir === 'horizontal' ? r + q : -r - q;
+
+    hexes.forEach(h => {
+        let srcQ = mirrorQ(h.q, h.r, direction);
+        let srcR = mirrorR(h.q, h.r, direction);
+        
+        const srcTerrain = terrainMap.get(`${srcQ},${srcR}`);
+        if (srcTerrain) h.terrain = srcTerrain;
+    });
+
+    rivers.forEach(id => {
+        const parts = id.split('_').map(p => p.split(',').map(Number));
+        let p1 = parts[0], p2 = parts[1];
+        
+        let m1Q = mirrorQ(p1[0], p1[1], direction);
+        let m1R = mirrorR(p1[0], p1[1], direction);
+        let m2Q = mirrorQ(p2[0], p2[1], direction);
+        let m2R = mirrorR(p2[0], p2[1], direction);
+        
+        newRivers.add(getEdgeID(m1Q, m1R, m2Q, m2R));
+    });
+
+    rivers = newRivers;
+    draw();
+}
+
+draw();

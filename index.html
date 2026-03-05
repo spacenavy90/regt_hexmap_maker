@@ -16,21 +16,21 @@
         <div class="tool-group">
             <span class="group-label">Terrain</span>
             <div class="button-row">
-                <button onclick="setTool('Open')">Grass</button>
-                <button onclick="setTool('Difficult')">Forest</button>
-                <button onclick="setTool('Hazardous')">Hills</button>
-                <button onclick="setTool('Impassable')">Mtn</button>
-                <button onclick="setTool('Water')">Water</button>
+                <button data-tool="Open" onclick="setTool('Open')" class="active-tool">Grass</button>
+                <button data-tool="Difficult" onclick="setTool('Difficult')">Forest</button>
+                <button data-tool="Hazardous" onclick="setTool('Hazardous')">Hills</button>
+                <button data-tool="Impassable" onclick="setTool('Impassable')">Mtn</button>
+                <button data-tool="Water" onclick="setTool('Water')">Water</button>
             </div>
         </div>
 
         <div class="tool-group no-border">
             <span class="group-label">Structures</span>
             <div class="button-row">
-                <button onclick="setTool('VP')">VP</button>
-                <button onclick="setTool('Capital')">Capital</button>
-                <button onclick="setTool('Road')">Road</button>
-                <button onclick="setTool('River')">River</button>
+                <button data-tool="VP" onclick="setTool('VP')">VP</button>
+                <button data-tool="Capital" onclick="setTool('Capital')">Capital</button>
+                <button data-tool="Road" onclick="setTool('Road')">Road</button>
+                <button data-tool="River" onclick="setTool('River')">River</button>
             </div>
         </div>
     </header>
@@ -49,11 +49,21 @@
         <div class="tool-group">
             <span class="group-label">System</span>
             <div class="button-row">
-                <button onclick="setTool('Eraser')" class="btn-danger">Eraser</button>
+                <button data-tool="Eraser" onclick="setTool('Eraser')" class="btn-danger">Eraser</button>
                 <button onclick="clearMap()" class="btn-danger">Clear All</button>
-                <button onclick="generateMap()" class="btn-action">Auto-Generate</button>
                 <button id="gridToggleBtn" onclick="toggleGrid()">Grid: White</button>
                 <button onclick="rotateMap()">Rotate 60°</button>
+                <button onclick="mirrorMap('horizontal')">Mirror H</button>
+                <button onclick="mirrorMap('vertical')">Mirror V</button>
+            </div>
+        </div>
+
+        <div class="tool-group">
+            <span class="group-label">Generation</span>
+            <div class="button-row">
+                <button onclick="generateRandomMap()" class="btn-action">Random Map</button>
+                <input type="text" id="mapSeed" class="seed-input" placeholder="Seed...">
+                <button onclick="generateFromSeed()" class="btn-action">Use Seed</button>
             </div>
         </div>
 
@@ -63,8 +73,8 @@
                 <select id="exportScale">
                     <option value="1">Standard (800px)</option>
                     <option value="2.56">High-Res (2K)</option>
-                    <option value="5.12">4K Resolution</option>
-                    <option value="10.24">8K Print</option>
+                    <option value="5.12">Extreme (4K)</option>
+                    <option value="10.24">Print (8K) </option>
                 </select>
                 <button onclick="downloadMap()" class="btn-save">Save PNG</button>
             </div>
