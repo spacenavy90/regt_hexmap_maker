@@ -7,16 +7,46 @@ let rivers = new Set();
 let isDrawing = false;
 let gridStyle = 'white';
 
-const terrainColors = {
-    'Open': '#90ee90',      
-    'Difficult': '#2e8b57', 
-    'Hazardous': '#ff8c00', 
-    'Impassable': '#d3d3d3',
-    'VP': '#ffff00',
-    'Capital': '#ffff00',
-    'Road': '#333333',      
-    'Water': '#1e90ff'      
+let currentBiome = 'Temperate';
+
+const biomeColors = {
+    'Temperate': {
+        'Open': '#90ee90',      
+        'Difficult': '#2e8b57', 
+        'Hazardous': '#ff8c00', 
+        'Impassable': '#ada9a9',
+        'VP': '#ffff00',
+        'Capital': '#ffff00',
+        'Road': '#333333',      
+        'Water': '#1e90ff'      
+    },
+    'Desert': {
+        'Open': '#eedd82', 
+        'Difficult': '#b8860b', 
+        'Hazardous': '#cd853f', 
+        'Impassable': '#8b4513', 
+        'VP': '#ffff00',
+        'Capital': '#ffff00',
+        'Road': '#333333',
+        'Water': '#1e90ff' 
+    },
+    'Snow': {
+        'Open': '#c5c5c5', 
+        'Difficult': '#88a0c0', 
+        'Hazardous': '#add8e6', 
+        'Impassable': '#778899', 
+        'VP': '#ffff00',
+        'Capital': '#ffff00',
+        'Road': '#333333',
+        'Water': '#1e90ff' 
+    }
 };
+
+function changeBiome(biome) {
+    currentBiome = biome;
+    draw();
+    getShareCode();
+}
 
 const iconFiles = {
     'Difficult': 'forest.svg',
@@ -68,7 +98,8 @@ function getShareCode() {
         return n2c(parts[0][0]) + n2c(parts[0][1]) + n2c(parts[1][0]) + n2c(parts[1][1]);
     }).join('');
     
-    let shareCode = terrainStr + (riverStr.length ? '|' + riverStr : '');
+    // Append the current biome to the end of the code
+    let shareCode = terrainStr + '|' + riverStr + '|' + currentBiome;
     document.getElementById('mapSeed').value = shareCode;
 }
 
@@ -82,6 +113,7 @@ function loadShareCode() {
     let parts = code.split('|');
     let terrainStr = parts[0];
     let riverStr = parts[1] || '';
+    let loadedBiome = parts[2] || 'Temperate'; // Fallback for older codes
     
     if (terrainStr.length !== hexes.length) {
         alert("Invalid share code length.");
@@ -100,6 +132,10 @@ function loadShareCode() {
         let r2 = c2n(riverStr[i+3]);
         rivers.add(getEdgeID(q1, r1, q2, r2));
     }
+    
+    currentBiome = loadedBiome;
+    const biomeDropdown = document.getElementById('biomeSelect');
+    if (biomeDropdown) biomeDropdown.value = loadedBiome;
     
     draw();
 }
@@ -257,7 +293,7 @@ function drawHex(targetCtx, x, y, type) {
         targetCtx.lineTo(x + size * Math.cos(i * Math.PI / 3), y + size * Math.sin(i * Math.PI / 3));
     }
     targetCtx.closePath();
-    targetCtx.fillStyle = terrainColors[type] || '#90ee90';
+    targetCtx.fillStyle = biomeColors[currentBiome][type] || biomeColors[currentBiome]['Open'];
     targetCtx.fill();
     
     // Grid stroke is now always rendered as either white or black
@@ -673,7 +709,8 @@ function generateMap() {
 function saveProject() {
     const projectData = {
         hexes: hexes,
-        rivers: Array.from(rivers) 
+        rivers: Array.from(rivers),
+        biome: currentBiome // Added to track palette in JSON files
     };
     
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(projectData));
@@ -696,6 +733,14 @@ function loadProject(event) {
             if (projectData.hexes && projectData.rivers) {
                 hexes = projectData.hexes;
                 rivers = new Set(projectData.rivers);
+                
+                // Restore biome and update the dropdown menu
+                if (projectData.biome) {
+                    currentBiome = projectData.biome;
+                    const bSelect = document.getElementById('biomeSelect');
+                    if (bSelect) bSelect.value = currentBiome;
+                }
+                
                 draw();
                 getShareCode();
             } else {
@@ -827,6 +872,15 @@ function copyShareCode() {
         copyBtn.innerText = "Copied!";
         setTimeout(() => { copyBtn.innerText = originalText; }, 1500);
     });
+}
+
+function resetMap() {
+    currentBiome = 'Temperate';
+    const biomeDropdown = document.getElementById('biomeSelect');
+    if (biomeDropdown) biomeDropdown.value = 'Temperate';
+    
+    // clearMap handles resetting all hexes to 'Open' and clearing rivers
+    clearMap(); 
 }
 
 draw();

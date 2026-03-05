@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Regiment Map Creator</title>
+    <title>Regiment Hexmap Maker</title>
     <style>
         body { background: #222; color: white; display: flex; flex-direction: column; align-items: center; font-family: sans-serif; margin: 0; padding: 20px; }
         canvas { background: #000; border: 2px solid #444; cursor: crosshair; margin-top: 5px; }
@@ -37,6 +37,13 @@
             <button data-tool="VP" onclick="setTool('VP')">VP</button>
             <button data-tool="Capital" onclick="setTool('Capital')">Capital</button>
             <button data-tool="Road" onclick="setTool('Road')">Road</button>
+
+            <span class="group-label">Biome</span>
+            <select id="biomeSelect" onchange="changeBiome(this.value)">
+                <option value="Temperate">Temperate</option>
+                <option value="Desert">Desert</option>
+                <option value="Snow">Snow</option>
+            </select>
         </header>
 
         <main class="canvas-area">
@@ -60,6 +67,7 @@
             <span class="group-label">Project</span>
             <button onclick="saveProject()">Save Map</button>
             <button onclick="document.getElementById('fileInput').click()">Load Map</button>
+            <button onclick="resetMap()"style="background: #ffcccc; color: #cc0000;">Reset Map</button>
             <input type="file" id="fileInput" style="display: none;" accept=".json" onchange="loadProject(event)">
         </div>
 
