@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Regiment Map Creator</title>
+    <style>
+        body { background: #222; color: white; display: flex; flex-direction: column; align-items: center; font-family: sans-serif; }
+        canvas { background: #000; border: 2px solid #444; cursor: crosshair; margin-top: 10px; }
+        .toolbar { margin: 10px; display: flex; gap: 5px; flex-wrap: wrap; justify-content: center; align-items: center; }
+        button, select { padding: 8px 12px; cursor: pointer; font-weight: bold; background: #ddd; border: none; border-radius: 4px; }
+        button:hover, select:hover { background: #bbb; }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+    <header class="toolbar">
+        <div class="tool-group">
+            <span class="group-label">Terrain</span>
+            <div class="button-row">
+                <button onclick="setTool('Open')">Grass</button>
+                <button onclick="setTool('Difficult')">Forest</button>
+                <button onclick="setTool('Hazardous')">Hills</button>
+                <button onclick="setTool('Impassable')">Mtn</button>
+                <button onclick="setTool('Water')">Water</button>
+            </div>
+        </div>
+
+        <div class="tool-group no-border">
+            <span class="group-label">Structures</span>
+            <div class="button-row">
+                <button onclick="setTool('VP')">VP</button>
+                <button onclick="setTool('Capital')">Capital</button>
+                <button onclick="setTool('Road')">Road</button>
+                <button onclick="setTool('River')">River</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="canvas-area">
+        <canvas id="mapCanvas" width="800" height="800"></canvas>
+    </main>
+
+    <footer class="status-bar">
+        <div class="status-item">Tool: <span id="active-tool">Grass</span></div>
+        <div class="status-item">Coordinates: <span id="hex-coords">0, 0</span></div>
+        <br>
+    </footer>
+
+    <div class="bottom-toolbar">
+        <div class="tool-group">
+            <span class="group-label">System</span>
+            <div class="button-row">
+                <button onclick="setTool('Eraser')" class="btn-danger">Eraser</button>
+                <button onclick="clearMap()" class="btn-danger">Clear All</button>
+                <button onclick="generateMap()" class="btn-action">Auto-Generate</button>
+            </div>
+        </div>
+
+        <div class="tool-group">
+            <span class="group-label">Export</span>
+            <div class="button-row">
+                <select id="exportScale">
+                    <option value="1">Standard (800px)</option>
+                    <option value="2.56">High-Res (2K)</option>
+                    <option value="5.12">4K Resolution</option>
+                    <option value="10.24">8K Print</option>
+                </select>
+                <button onclick="downloadMap()" class="btn-save">Save PNG</button>
+            </div>
+        </div>
+
+        <div class="tool-group no-border">
+            <span class="group-label">Project</span>
+            <div class="button-row">
+                <button onclick="saveProject()">Save Map</button>
+                <button onclick="document.getElementById('fileInput').click()">Load Map</button>
+                <input type="file" id="fileInput" style="display: none;" accept=".json" onchange="loadProject(event)">
+            </div>
+        </div>
+    </div>
+</div>
+
+    <script src="script.js"></script>
+</body>
+</html>
