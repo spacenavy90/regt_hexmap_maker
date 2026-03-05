@@ -49,13 +49,13 @@ function changeBiome(biome) {
 }
 
 const iconFiles = {
-    'Difficult': 'forest.svg',
-    'Hazardous': 'hills.svg',
-    'Impassable': 'mountain.svg',
-    'VP': 'building.svg',
-    'Capital': 'capital.svg',
-    'Road': 'road.svg',
-    'Water': 'water.svg'
+    'Difficult': 'icons/forest.svg',
+    'Hazardous': 'icons/hills.svg',
+    'Impassable': 'icons/mountain.svg',
+    'VP': 'icons/building.svg',
+    'Capital': 'icons/capital.svg',
+    'Road': 'icons/road.svg',
+    'Water': 'icons/water.svg'
 };
 
 const loadedIcons = {};
@@ -74,7 +74,7 @@ const toolDisplayNames = {
     'Hazardous': 'Hills',
     'Impassable': 'Mountain',
     'Water': 'Water',
-    'VP': 'VP',
+    'VP': 'Victory Point',
     'Capital': 'Capital',
     'Road': 'Road',
     'River': 'River',
@@ -275,8 +275,9 @@ function applyTool(e) {
 }
 
 function draw(targetCtx = ctx) {
-    targetCtx.fillStyle = '#000';
-    targetCtx.fillRect(0, 0, 800, 800);
+    //targetCtx.fillStyle = '#000';
+    //targetCtx.fillRect(0, 0, 800, 800);
+    targetCtx.clearRect(0, 0, 800, 800); // Transparent canvas area
     
     hexes.forEach(h => {
         const x = 400 + size * 3/2 * h.q;

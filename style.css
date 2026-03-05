@@ -107,10 +107,9 @@ button:hover {
 }
 
 canvas { 
-    background: #000; 
-    border: 1px solid var(--border);
-    box-shadow: 0 0 30px rgba(0,0,0,0.5);
-    border-radius: 2px;
+    background: #111; /* Dark grey just for the editor view */
+    border: 2px solid #444;
+    /* ... rest of your canvas styles */
 }
 
 .status-item span {
