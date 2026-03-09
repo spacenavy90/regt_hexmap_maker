@@ -143,3 +143,39 @@ button.active-tool {
     font-family: monospace;
     font-size: 12px;
 }
+
+.support-links {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    margin-top: 15px;
+    width: 100%;
+}
+
+.nav-btn {
+    background: var(--bg-button);
+    color: var(--text-main);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: bold;
+    text-decoration: none;
+    text-align: center;
+    transition: 0.15s ease;
+}
+
+.nav-btn:hover {
+    background: #444;
+    border-color: #666;
+}
+
+.donate-btn {
+    background-color: #ffdd00;
+    color: #000000;
+    border-color: #ffdd00;
+}
+
+.donate-btn:hover {
+    background: #ffea00;
+}
