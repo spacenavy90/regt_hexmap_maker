@@ -12,33 +12,36 @@ let currentBiome = 'Temperate';
 const biomeColors = {
     'Temperate': {
         'Open': '#90ee90',      
-        'Difficult': '#2e8b57', 
-        'Hazardous': '#ff8c00', 
-        'Impassable': '#ada9a9',
+        'Forest': '#2e8b57', 
+        'Hills': '#ff8c00', 
+        'Mountain': '#ada9a9',
         'VP': '#ffff00',
         'Capital': '#ffff00',
         'Road': '#333333',      
-        'Water': '#1e90ff'      
+        'Water': '#1e90ff',
+        'Wetland': '#556b2f' 
     },
     'Desert': {
         'Open': '#eedd82', 
-        'Difficult': '#b8860b', 
-        'Hazardous': '#cd853f', 
-        'Impassable': '#8b4513', 
+        'Forest': '#b8860b', 
+        'Hills': '#cd853f', 
+        'Mountain': '#8b4513', 
         'VP': '#ffff00',
         'Capital': '#ffff00',
         'Road': '#333333',
-        'Water': '#1e90ff' 
+        'Water': '#1e90ff',
+        'Wetland': '#6b946b'
     },
     'Snow': {
         'Open': '#c5c5c5', 
-        'Difficult': '#88a0c0', 
-        'Hazardous': '#add8e6', 
-        'Impassable': '#778899', 
+        'Forest': '#88a0c0', 
+        'Hills': '#add8e6', 
+        'Mountain': '#778899', 
         'VP': '#ffff00',
         'Capital': '#ffff00',
         'Road': '#333333',
-        'Water': '#1e90ff' 
+        'Water': '#1e90ff',
+        'Wetland': '#369980'
     }
 };
 
@@ -49,9 +52,10 @@ function changeBiome(biome) {
 }
 
 const iconFiles = {
-    'Difficult': 'icons/forest.svg',
-    'Hazardous': 'icons/hills.svg',
-    'Impassable': 'icons/mountain.svg',
+    'Forest': 'icons/forest.svg',
+    'Hills': 'icons/hills.svg',
+    'Mountain': 'icons/mountain.svg',
+    'Wetland': 'icons/wetland.svg',
     'VP': 'icons/building.svg',
     'Capital': 'icons/capital.svg',
     'Road': 'icons/road.svg',
@@ -70,10 +74,11 @@ const directions = [[1, 0], [0, 1], [-1, 1], [-1, 0], [0, -1], [1, -1]];
 
 const toolDisplayNames = {
     'Open': 'Open',
-    'Difficult': 'Forest',
-    'Hazardous': 'Hills',
-    'Impassable': 'Mountain',
+    'Forest': 'Forest',
+    'Hills': 'Hills',
+    'Mountain': 'Mountain',
     'Water': 'Water',
+    'Wetland': 'Wetland',
     'VP': 'Victory Point',
     'Capital': 'Capital',
     'Road': 'Road',
@@ -83,8 +88,8 @@ const toolDisplayNames = {
 
 const originalRandom = Math.random;
 
-const t2c = { 'Open':'O', 'Difficult':'F', 'Hazardous':'H', 'Impassable':'M', 'Water':'W', 'VP':'V', 'Capital':'C', 'Road':'R' };
-const c2t = { 'O':'Open', 'F':'Difficult', 'H':'Hazardous', 'M':'Impassable', 'W':'Water', 'V':'VP', 'C':'Capital', 'R':'Road' };
+const t2c = { 'Open':'O', 'Forest':'F', 'Hills':'H', 'Mountain':'M', 'Water':'W', 'Wetland':'S', 'VP':'V', 'Capital':'C', 'Road':'R' };
+const c2t = { 'O':'Open', 'F':'Forest', 'H':'Hills', 'M':'Mountain', 'W':'Water', 'S':'Wetland', 'V':'VP', 'C':'Capital', 'R':'Road' };
 
 // Maps coordinates -5 through 5 to letters A through K
 const n2c = (n) => String.fromCharCode(n + 70); 
@@ -657,19 +662,43 @@ function generateMap() {
         }
     });
 
-    // --- TERRAIN SCATTER-BURST ---
+// --- TERRAIN SCATTER-BURST ---
     hexes.forEach(h => {
         h.populated = h.terrain !== 'Open';
     });
 
+    // Helper to check if a hex touches a water hex or a river edge
+    function isNearWater(hex) {
+        let near = false;
+        directions.forEach(d => {
+            let n = hexes.find(nx => nx.q === hex.q + d[0] && nx.r === hex.r + d[1]);
+            if (n) {
+                if (n.terrain === 'Water') near = true;
+                if (rivers.has(getEdgeID(hex.q, hex.r, n.q, n.r))) near = true;
+            }
+        });
+        return near;
+    }
+
     hexes.forEach(h => {
         if (!h.populated && h.terrain === 'Open') {
+            
+            let nearWater = isNearWater(h);
             let roll = Math.random();
             let type = 'Open';
             
-            if (roll > 0.45 && roll <= 0.80) type = 'Difficult';
-            else if (roll > 0.80 && roll <= 0.95) type = 'Hazardous';
-            else if (roll > 0.95) type = 'Impassable';
+            if (nearWater) {
+                // Coastal/River Roll: 45% Open, 20% Forest, 20% Hills, 10% Wetland, 5% Mountain
+                if (roll > 0.45 && roll <= 0.65) type = 'Forest';
+                else if (roll > 0.65 && roll <= 0.85) type = 'Hills';
+                else if (roll > 0.85 && roll <= 0.95) type = 'Wetland';
+                else if (roll > 0.95) type = 'Mountain';
+            } else {
+                // Inland Roll: 45% Open, 20% Forest, 30% Hills, 5% Mountain
+                if (roll > 0.45 && roll <= 0.65) type = 'Forest';
+                else if (roll > 0.65 && roll <= 0.95) type = 'Hills';
+                else if (roll > 0.95) type = 'Mountain';
+            }
 
             h.terrain = type;
             h.populated = true;
@@ -687,16 +716,27 @@ function generateMap() {
 
             let neighbors = getValidNeighbors(h);
             if (neighbors.length > 0) {
-                let adj1 = neighbors[Math.floor(Math.random() * neighbors.length)];
-                adj1.terrain = type;
-                adj1.populated = true;
+                // Prevent Wetlands from spreading inland during scatter-burst
+                let validSpreadNeighbors = neighbors;
+                if (type === 'Wetland') {
+                    validSpreadNeighbors = neighbors.filter(n => isNearWater(n));
+                }
 
-                if (Math.random() < 0.15) {
-                    let extendedNeighbors = [...new Set([...getValidNeighbors(h), ...getValidNeighbors(adj1)])];
-                    if (extendedNeighbors.length > 0) {
-                        let adj2 = extendedNeighbors[Math.floor(Math.random() * extendedNeighbors.length)];
-                        adj2.terrain = type;
-                        adj2.populated = true;
+                if (validSpreadNeighbors.length > 0) {
+                    let adj1 = validSpreadNeighbors[Math.floor(Math.random() * validSpreadNeighbors.length)];
+                    adj1.terrain = type;
+                    adj1.populated = true;
+
+                    if (Math.random() < 0.15) {
+                        let extendedNeighbors = [...new Set([...getValidNeighbors(h), ...getValidNeighbors(adj1)])];
+                        if (type === 'Wetland') {
+                            extendedNeighbors = extendedNeighbors.filter(n => isNearWater(n));
+                        }
+                        if (extendedNeighbors.length > 0) {
+                            let adj2 = extendedNeighbors[Math.floor(Math.random() * extendedNeighbors.length)];
+                            adj2.terrain = type;
+                            adj2.populated = true;
+                        }
                     }
                 }
             }
