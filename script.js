@@ -13,7 +13,7 @@ const biomeColors = {
     'Temperate': {
         'Open': '#90ee90',      
         'Forest': '#2e8b57', 
-        'Hills': '#ff8c00', 
+        'Hills': '#8db600', 
         'Mountain': '#ada9a9',
         'VP': '#ffff00',
         'Capital': '#ffff00',
