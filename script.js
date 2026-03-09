@@ -6,9 +6,10 @@ let hexes = [];
 let rivers = new Set(); 
 let isDrawing = false;
 let gridStyle = 'white';
+let hoveredHex = null;
+let hoveredEdge = null;
 
 let currentBiome = 'Temperate';
-
 const biomeColors = {
     'Temperate': {
         'Open': '#90ee90',      
@@ -165,7 +166,6 @@ for (let q = -5; q <= 5; q++) {
 
 canvas.addEventListener('mousedown', (e) => { isDrawing = true; applyTool(e); });
 canvas.addEventListener('mousemove', (e) => { 
-    // Existing coordinate math...
     const rect = canvas.getBoundingClientRect();
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
@@ -187,6 +187,46 @@ canvas.addEventListener('mousemove', (e) => {
 
     document.getElementById('hex-coords').innerText = `${q}, ${r}`;
 
+    let newHoveredHex = hexes.find(h => h.q === q && h.r === r) || null;
+    let newHoveredEdge = null;
+
+    if (newHoveredHex && (currentTool === 'River' || currentTool === 'Eraser')) {
+        const hexCenterX = 400 + size * 3/2 * q;
+        const hexCenterY = 400 + size * Math.sqrt(3) * (r + q/2);
+        const distToCenter = Math.hypot(mouseX - hexCenterX, mouseY - hexCenterY);
+
+        // Only search for edges if the mouse is in the outer ring of the hex
+        if (distToCenter >= size * 0.55) {
+            let bestNeighbor = null;
+            let minCenterDist = Infinity;
+
+            directions.forEach(d => {
+                const nq = q + d[0];
+                const nr = r + d[1];
+                if (!hexes.some(h => h.q === nq && h.r === nr)) return;
+
+                const nx = 400 + size * 3/2 * nq;
+                const ny = 400 + size * Math.sqrt(3) * (nr + nq/2);
+                const dist = Math.hypot(mouseX - nx, mouseY - ny);
+                
+                if (dist < minCenterDist) {
+                    minCenterDist = dist;
+                    bestNeighbor = { q: nq, r: nr };
+                }
+            });
+
+            if (bestNeighbor) {
+                newHoveredEdge = getEdgeID(q, r, bestNeighbor.q, bestNeighbor.r);
+            }
+        }
+    }
+
+    if (hoveredHex !== newHoveredHex || hoveredEdge !== newHoveredEdge) {
+        hoveredHex = newHoveredHex;
+        hoveredEdge = newHoveredEdge;
+        draw();
+    }
+
     if (isDrawing) applyTool(e); 
 });
 
@@ -198,6 +238,9 @@ window.addEventListener('mouseup', () => {
 });
 
 canvas.addEventListener('mouseleave', () => { 
+    hoveredHex = null;
+    hoveredEdge = null;
+    draw();
     if (isDrawing) {
         isDrawing = false; 
         getShareCode();
@@ -234,41 +277,55 @@ function applyTool(e) {
     if (!baseHex) return; 
 
     if (currentTool === 'River' || currentTool === 'Eraser') {
-        let bestNeighbor = null;
-        let minCenterDist = Infinity;
+        const hexCenterX = 400 + size * 3/2 * q;
+        const hexCenterY = 400 + size * Math.sqrt(3) * (r + q/2);
+        const distToCenter = Math.hypot(mouseX - hexCenterX, mouseY - hexCenterY);
 
-        directions.forEach(d => {
-            const nq = q + d[0];
-            const nr = r + d[1];
-            
-            if (!hexes.some(h => h.q === nq && h.r === nr)) return;
+        if (distToCenter >= size * 0.55) {
+            let bestNeighbor = null;
+            let minCenterDist = Infinity;
 
-            const nx = 400 + size * 3/2 * nq;
-            const ny = 400 + size * Math.sqrt(3) * (nr + nq/2);
-            const dist = Math.hypot(mouseX - nx, mouseY - ny);
-            
-            if (dist < minCenterDist) {
-                minCenterDist = dist;
-                bestNeighbor = { q: nq, r: nr };
-            }
-        });
+            directions.forEach(d => {
+                const nq = q + d[0];
+                const nr = r + d[1];
+                
+                if (!hexes.some(h => h.q === nq && h.r === nr)) return;
 
-        if (bestNeighbor) {
-            let hex1 = [q, r];
-            let hex2 = [bestNeighbor.q, bestNeighbor.r];
-            
-            if (hex1[0] > hex2[0] || (hex1[0] === hex2[0] && hex1[1] > hex2[1])) {
-                let temp = hex1; hex1 = hex2; hex2 = temp;
+                const nx = 400 + size * 3/2 * nq;
+                const ny = 400 + size * Math.sqrt(3) * (nr + nq/2);
+                const dist = Math.hypot(mouseX - nx, mouseY - ny);
+                
+                if (dist < minCenterDist) {
+                    minCenterDist = dist;
+                    bestNeighbor = { q: nq, r: nr };
+                }
+            });
+
+            if (bestNeighbor) {
+                let hex1 = [q, r];
+                let hex2 = [bestNeighbor.q, bestNeighbor.r];
+                
+                if (hex1[0] > hex2[0] || (hex1[0] === hex2[0] && hex1[1] > hex2[1])) {
+                    let temp = hex1; hex1 = hex2; hex2 = temp;
+                }
+                
+                const edgeID = `${hex1[0]},${hex1[1]}_${hex2[0]},${hex2[1]}`;
+                
+                if (currentTool === 'River') {
+                    rivers.add(edgeID);
+                } else if (currentTool === 'Eraser') {
+                    if (rivers.has(edgeID)) {
+                        rivers.delete(edgeID);
+                    } else {
+                        baseHex.terrain = 'Open';
+                    }
+                }
+                draw();
+                getShareCode();
             }
-            
-            const edgeID = `${hex1[0]},${hex1[1]}_${hex2[0]},${hex2[1]}`;
-            
-            if (currentTool === 'River') {
-                rivers.add(edgeID);
-            } else if (currentTool === 'Eraser') {
-                rivers.delete(edgeID);
-                baseHex.terrain = 'Open';
-            }
+        } else if (currentTool === 'Eraser') {
+            // User clicked the inner circle of the hex
+            baseHex.terrain = 'Open';
             draw();
             getShareCode();
         }
@@ -280,9 +337,7 @@ function applyTool(e) {
 }
 
 function draw(targetCtx = ctx) {
-    //targetCtx.fillStyle = '#000';
-    //targetCtx.fillRect(0, 0, 800, 800);
-    targetCtx.clearRect(0, 0, 800, 800); // Transparent canvas area
+    targetCtx.clearRect(0, 0, 800, 800); 
     
     hexes.forEach(h => {
         const x = 400 + size * 3/2 * h.q;
@@ -291,6 +346,71 @@ function draw(targetCtx = ctx) {
     });
 
     drawRivers(targetCtx);
+
+    // Draw hover highlights on the main canvas (not during export)
+    if (hoveredHex && targetCtx === ctx) {
+        const x = 400 + size * 3/2 * hoveredHex.q;
+        const y = 400 + size * Math.sqrt(3) * (hoveredHex.r + hoveredHex.q/2);
+
+        if (currentTool === 'River') {
+            if (hoveredEdge) drawEdgeHighlight(targetCtx, hoveredEdge);
+        } else if (currentTool === 'Eraser') {
+            // Prioritize edge highlight if a river exists, otherwise highlight the hex
+            if (hoveredEdge && rivers.has(hoveredEdge)) {
+                drawEdgeHighlight(targetCtx, hoveredEdge);
+            } else {
+                drawHexHighlight(targetCtx, x, y);
+            }
+        } else {
+            drawHexHighlight(targetCtx, x, y);
+        }
+    }
+}
+
+function drawHexHighlight(targetCtx, x, y) {
+    targetCtx.beginPath();
+    for (let i = 0; i < 6; i++) {
+        targetCtx.lineTo(x + size * Math.cos(i * Math.PI / 3), y + size * Math.sin(i * Math.PI / 3));
+    }
+    targetCtx.closePath();
+    targetCtx.strokeStyle = currentTool === 'Eraser' ? 'rgba(255, 0, 0, 0.8)' : 'rgba(255, 255, 255, 0.8)';
+    targetCtx.lineWidth = 4;
+    targetCtx.stroke();
+}
+
+function drawEdgeHighlight(targetCtx, edgeID) {
+    const parts = edgeID.split('_');
+    const h1 = parts[0].split(',').map(Number);
+    const h2 = parts[1].split(',').map(Number);
+
+    const x1 = 400 + size * 3/2 * h1[0];
+    const y1 = 400 + size * Math.sqrt(3) * (h1[1] + h1[0]/2);
+    const x2 = 400 + size * 3/2 * h2[0];
+    const y2 = 400 + size * Math.sqrt(3) * (h2[1] + h2[0]/2);
+
+    const mx = (x1 + x2) / 2;
+    const my = (y1 + y2) / 2;
+    
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const length = Math.hypot(dx, dy);
+    const nx = -dy / length;
+    const ny = dx / length;
+
+    targetCtx.beginPath();
+    targetCtx.moveTo(mx - nx * (size / 2), my - ny * (size / 2));
+    targetCtx.lineTo(mx + nx * (size / 2), my + ny * (size / 2));
+    
+    // Turns red if erasing a river, white if placing one
+    if (currentTool === 'Eraser' && rivers.has(edgeID)) {
+        targetCtx.strokeStyle = 'rgba(255, 0, 0, 0.8)';
+    } else {
+        targetCtx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+    }
+    
+    targetCtx.lineWidth = 8;
+    targetCtx.lineCap = 'round';
+    targetCtx.stroke();
 }
 
 function drawHex(targetCtx, x, y, type) {
